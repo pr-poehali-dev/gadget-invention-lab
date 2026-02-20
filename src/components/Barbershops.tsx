@@ -1,47 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+import API_URLS from "@backend/func2url.json";
 
-const barbershops = [
-  {
-    id: 1,
-    name: "TOPGUN",
-    address: "Москва, ул. Тверская, 18",
-    rating: 4.9,
-    reviews: 324,
-    image: "https://cdn.poehali.dev/projects/e19ddc13-f3c7-47ba-a46d-bba0c6f7049a/files/2f71b7e4-eaab-4613-963c-43b1cf4aebb3.jpg",
-    services: ["Стрижка", "Борода", "Камуфляж седины"],
-    masters: 8,
-  },
-  {
-    id: 2,
-    name: "CHOP-CHOP",
-    address: "Санкт-Петербург, Невский пр., 42",
-    rating: 4.8,
-    reviews: 256,
-    image: "https://cdn.poehali.dev/projects/e19ddc13-f3c7-47ba-a46d-bba0c6f7049a/files/8be299c8-d02d-478c-aa7d-1c5deebe710f.jpg",
-    services: ["Стрижка", "Королевское бритьё", "Укладка"],
-    masters: 6,
-  },
-  {
-    id: 3,
-    name: "BRITVA",
-    address: "Казань, ул. Баумана, 15",
-    rating: 4.7,
-    reviews: 189,
-    image: "https://cdn.poehali.dev/projects/e19ddc13-f3c7-47ba-a46d-bba0c6f7049a/files/b58a7628-df12-45af-bcac-78139091e4b2.jpg",
-    services: ["Стрижка", "Борода", "Детская стрижка"],
-    masters: 5,
-  },
-];
-
-const cities = ["Все города", "Москва", "Санкт-Петербург", "Казань"];
+interface Barbershop {
+  id: number;
+  name: string;
+  city: string;
+  address: string;
+  rating: number;
+  reviews_count: number;
+  services: string[];
+  masters_count: number;
+  image_url: string;
+}
 
 export default function Barbershops() {
   const [activeCity, setActiveCity] = useState("Все города");
+  const [shops, setShops] = useState<Barbershop[]>([]);
+  const [cities, setCities] = useState<string[]>(["Все города"]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(API_URLS.barbershops)
+      .then((res) => res.json())
+      .then((data: Barbershop[]) => {
+        setShops(data);
+        const uniqueCities = [...new Set(data.map((s) => s.city))];
+        setCities(["Все города", ...uniqueCities]);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   const filtered = activeCity === "Все города"
-    ? barbershops
-    : barbershops.filter((b) => b.address.startsWith(activeCity));
+    ? shops
+    : shops.filter((b) => b.city === activeCity);
 
   return (
     <section className="bg-neutral-50 py-16 sm:py-24 px-6">
@@ -69,59 +62,65 @@ export default function Barbershops() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((shop) => (
-            <div
-              key={shop.id}
-              className="bg-white group cursor-pointer overflow-hidden border border-neutral-200 hover:border-neutral-400 transition-all duration-300"
-            >
-              <div className="h-48 overflow-hidden">
-                <img
-                  src={shop.image}
-                  alt={shop.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
+        {loading ? (
+          <div className="text-center py-12 text-neutral-500">Загружаем барбершопы...</div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12 text-neutral-500">Барбершопы не найдены</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map((shop) => (
+              <div
+                key={shop.id}
+                className="bg-white group cursor-pointer overflow-hidden border border-neutral-200 hover:border-neutral-400 transition-all duration-300"
+              >
+                <div className="h-48 overflow-hidden">
+                  <img
+                    src={shop.image_url}
+                    alt={shop.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
 
-              <div className="p-5">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-lg font-bold text-neutral-900">{shop.name}</h3>
-                  <div className="flex items-center gap-1 text-sm">
-                    <Icon name="Star" size={14} />
-                    <span className="font-semibold">{shop.rating}</span>
-                    <span className="text-neutral-400">({shop.reviews})</span>
+                <div className="p-5">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-bold text-neutral-900">{shop.name}</h3>
+                    <div className="flex items-center gap-1 text-sm">
+                      <Icon name="Star" size={14} />
+                      <span className="font-semibold">{shop.rating}</span>
+                      <span className="text-neutral-400">({shop.reviews_count})</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-neutral-500 text-sm mb-4">
+                    <Icon name="MapPin" size={14} />
+                    <span>{shop.address}</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {shop.services.map((service) => (
+                      <span
+                        key={service}
+                        className="text-xs px-2.5 py-1 bg-neutral-100 text-neutral-600 uppercase tracking-wide"
+                      >
+                        {service}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-between items-center pt-3 border-t border-neutral-100">
+                    <span className="text-sm text-neutral-500">
+                      {shop.masters_count} {shop.masters_count >= 5 ? "мастеров" : "мастера"}
+                    </span>
+                    <button className="text-sm font-semibold text-black uppercase tracking-wide hover:text-neutral-600 transition-colors flex items-center gap-1">
+                      Записаться
+                      <Icon name="ArrowRight" size={14} />
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-1.5 text-neutral-500 text-sm mb-4">
-                  <Icon name="MapPin" size={14} />
-                  <span>{shop.address}</span>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {shop.services.map((service) => (
-                    <span
-                      key={service}
-                      className="text-xs px-2.5 py-1 bg-neutral-100 text-neutral-600 uppercase tracking-wide"
-                    >
-                      {service}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex justify-between items-center pt-3 border-t border-neutral-100">
-                  <span className="text-sm text-neutral-500">
-                    {shop.masters} {shop.masters >= 5 ? "мастеров" : "мастера"}
-                  </span>
-                  <button className="text-sm font-semibold text-black uppercase tracking-wide hover:text-neutral-600 transition-colors flex items-center gap-1">
-                    Записаться
-                    <Icon name="ArrowRight" size={14} />
-                  </button>
-                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

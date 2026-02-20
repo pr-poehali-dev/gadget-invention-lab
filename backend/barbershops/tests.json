@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "Get all barbershops",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Get barbershops by city",
+      "method": "GET",
+      "path": "/?city=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0",
+      "expectedStatus": 200
+    }
+  ]
+}
